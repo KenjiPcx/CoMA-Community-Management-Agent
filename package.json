@@ -1,0 +1,16 @@
+{
+  "name": "discord-community-agent",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "bun-types": "latest",
+    "eslint": "^9.10.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.1",
+    "dotenv": "^16.4.5"
+  }
+}
