@@ -3,6 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "devDependencies": {
+    "@types/node-cron": "^3.0.11",
     "bun-types": "latest",
     "eslint": "^9.10.0"
   },
@@ -10,7 +11,9 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@azure/cosmos": "^4.1.1",
     "discord.js": "^14.16.1",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3"
   }
 }
