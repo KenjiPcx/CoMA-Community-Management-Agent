@@ -1,5 +1,13 @@
-import { Client, Collection, FetchMessagesOptions, Message, TextChannel } from "discord.js";
-import { getUnregisteredUsersFromIds } from "../db/users";
+import {
+  Client,
+  Collection,
+  FetchMessagesOptions,
+  Message,
+  TextChannel,
+  User,
+} from "discord.js";
+import { GET_UNREGISTERED_USERS_FROM_IDS } from "../endpoints";
+import { sendCardWithButtons } from "../bot/botActions";
 
 export const processNewMatchmakingMessages = async (client: Client) => {
   const channelId = "1283235142739169362";
@@ -32,18 +40,48 @@ export const processNewMatchmakingMessages = async (client: Client) => {
     uniqueUserIds.add(message.author.id);
   });
 
-  const unregisteredUserIds = await getUnregisteredUsersFromIds(
-    Array.from(uniqueUserIds)
-  );
-  for (const userId of unregisteredUserIds) {
-    try {
+  console.log(uniqueUserIds);
+
+  try {
+    const res = await fetch(GET_UNREGISTERED_USERS_FROM_IDS, {
+      method: "POST",
+      body: JSON.stringify({ userIds: Array.from(uniqueUserIds) }),
+    });
+
+    const unregisteredUserIds = (await res.json()) as string[];
+
+    // send dms to users
+    for (const userId of unregisteredUserIds) {
       const user = await client.users.fetch(userId);
       await user.send(
-        "Welcome! You've been noticed in our channel. Here's some important information..."
+        "Hey, I noticed you're looking in the team match up channel, would you be interested in trying out our matchmaking service? We'll try to pair you with people, but we first need to ask you some questions"
+      );
+      await sendCardWithButtons(
+        client,
+        user,
+        "New Matchmaking Experience",
+        "Would you like to try it out?",
+        "matchmaking"
       );
       console.log(`Sent DM to user ${userId}`);
-    } catch (error) {
-      console.error(`Failed to send DM to user ${userId}:`, error);
     }
+  } catch (error) {
+    console.error("Error fetching unregistered users:", error);
   }
-}
+
+  // const unregisteredUserIds = await getUnregisteredUsersFromIds(
+  //   Array.from(uniqueUserIds)
+  // );
+  // for (const userId of unregisteredUserIds) {
+  //   try {
+  //     const user = await client.users.fetch(userId);
+  //     await user.send(
+  //       "Welcome! You've been noticed in our channel. Here's some important information..."
+  //     );
+  //     console.log(`Sent DM to user ${userId}`);
+  //   } catch (error) {
+  //     console.error(`Failed to send DM to user ${userId}:`, error);
+  //   }
+  // }
+};
+

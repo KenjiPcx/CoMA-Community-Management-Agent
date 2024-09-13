@@ -24,7 +24,7 @@ export const softCreateUser = async (discordUserId: string) => {
 export const getUnregisteredUsersFromIds = async (userIds: string[]) => {
   const querySpec = {
     query:
-      "SELECT c.id FROM c WHERE c.id IN (@userIds) AND c.registered = true)",
+      "SELECT c.userId FROM c WHERE c.userId IN (@userIds) AND c.isRegistered = true",
     parameters: [
       {
         name: "@userIds",
@@ -32,10 +32,15 @@ export const getUnregisteredUsersFromIds = async (userIds: string[]) => {
       },
     ],
   };
-  const { resources: registeredUsers } = await containers.users.items
-    .query(querySpec)
+  try {
+    const { resources: registeredUsers } = await containers.users.items
+      .query(querySpec)
     .fetchAll();
   const registeredIds = registeredUsers.map((user) => user.id);
-  const unregisteredIds = userIds.filter((id) => !registeredIds.includes(id));
-  return unregisteredIds;
+    const unregisteredIds = userIds.filter((id) => !registeredIds.includes(id));
+    return unregisteredIds;
+  } catch (error) {
+    console.error("Error fetching unregistered users:", error);
+    return [];
+  }
 };

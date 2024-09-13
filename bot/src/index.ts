@@ -1,57 +1,51 @@
-import fs from "fs";
-import path from "path";
 import dotenv from "dotenv";
 dotenv.config();
 import cron from "node-cron";
 
 const token = process.env.DISCORD_TOKEN;
 
-import { Client, Events, GatewayIntentBits, Collection } from "discord.js";
+import {
+  Client,
+  Events,
+  GatewayIntentBits,
+  Collection,
+  ButtonInteraction,
+} from "discord.js";
 import { processNewMatchmakingMessages } from "./channelProcessors/processMatchmakingChannel";
+import { registerCommands } from "./bot/botSetup";
 
-interface CustomClient extends Client {
+export interface CustomClient extends Client {
   commands: Collection<string, any>;
 }
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildEmojisAndStickers,
-    GatewayIntentBits.GuildIntegrations,
-    GatewayIntentBits.GuildWebhooks,
-    GatewayIntentBits.GuildInvites,
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.MessageContent,
+    // GatewayIntentBits.GuildMembers,
+    // GatewayIntentBits.GuildEmojisAndStickers,
+    // GatewayIntentBits.GuildIntegrations,
+    // GatewayIntentBits.GuildWebhooks,
+    // GatewayIntentBits.GuildInvites,
   ],
 }) as CustomClient;
 
-client.commands = new Collection();
-
-const foldersPath = path.join(__dirname, "commands");
-const commandFolders = fs.readdirSync(foldersPath);
-
-for (const folder of commandFolders) {
-  const commandsPath = path.join(foldersPath, folder);
-  const commandFiles = fs
-    .readdirSync(commandsPath)
-    .filter((file) => file.endsWith(".ts"));
-  for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    if ("data" in command && "execute" in command) {
-      client.commands.set(command.data.name, command);
-    } else {
-      console.log(
-        `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
-      );
-    }
-  }
+interface UserState {
+  activeOnboardingSession: boolean;
 }
+const userState = new Collection<string, UserState>();
+const userThreads = new Collection<string, string>();
+
+registerCommands(client);
 
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 
-  cron.schedule("0 * * * *", async () => {
-    console.log("Running scheduled task to process new messages on matchmaking channel");
+  cron.schedule("* * * * *", async () => {
+    console.log(
+      "Running scheduled task to process new messages on matchmaking channel"
+    );
     await processNewMatchmakingMessages(client);
   });
 });
@@ -79,31 +73,61 @@ client.on(Events.GuildMemberAdd, async (member) => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+  if (interaction.isChatInputCommand()) {
+    const command = (interaction.client as CustomClient).commands.get(
+      interaction.commandName
+    );
 
-  const command = (interaction.client as CustomClient).commands.get(
-    interaction.commandName
-  );
+    if (!command) {
+      console.error(
+        `No command matching ${interaction.commandName} was found.`
+      );
+      return;
+    }
 
-  if (!command) {
-    console.error(`No command matching ${interaction.commandName} was found.`);
-    return;
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      console.error(error);
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: "There was an error while executing this command!",
+          ephemeral: true,
+        });
+      } else {
+        await interaction.reply({
+          content: "There was an error while executing this command!",
+          ephemeral: true,
+        });
+      }
+    }
   }
 
-  try {
-    await command.execute(interaction);
-  } catch (error) {
-    console.error(error);
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({
-        content: "There was an error while executing this command!",
-        ephemeral: true,
-      });
+  if (interaction.isButton()) {
+    const buttonInteraction = interaction as ButtonInteraction;
+    const { customId, user, message } = buttonInteraction;
+    const [source, action] = customId.split("_");
+    console.log(
+      `User ${user.id} clicked on a card with id ${customId}, clicked ${action} from source ${source}`
+    );
+    console.log(`This interaction happened in channel: ${message.channelId}`);
+
+    if (message.guildId) {
+      console.log(`This interaction happened in guild: ${message.guildId}`);
     } else {
-      await interaction.reply({
-        content: "There was an error while executing this command!",
-        ephemeral: true,
-      });
+      console.log("This interaction happened in a DM");
+    }
+
+    if (action === "yes") {
+      await buttonInteraction.reply(
+        `You (${user.username}) clicked Yes on a card from ${source}!`
+      );
+      // Setup chat here
+      userState.set(user.id, { activeOnboardingSession: true });
+    } else if (action === "no") {
+      await buttonInteraction.reply(
+        `You (${user.username}) clicked No on a card from ${source}!`
+      );
     }
   }
 });
