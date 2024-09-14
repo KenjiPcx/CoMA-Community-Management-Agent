@@ -1,4 +1,4 @@
-import { containers, UserDocument } from "./cosmosClient";
+import { containers } from "./cosmosClient";
 
 export const getUser = async (
   userId: string
@@ -8,6 +8,7 @@ export const getUser = async (
 };
 
 export const createOrUpdateUser = async (user: UserDocument) => {
+  console.log("Creating or updating user:", user);
   await containers.users.items.upsert(user);
 };
 

@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import { GET_UNREGISTERED_USERS_FROM_IDS } from "../endpoints";
 import { sendCardWithButtons } from "../bot/botActions";
+import { getUnregisteredUsersFromIds } from "../db/users";
 
 export const processNewMatchmakingMessages = async (client: Client) => {
   const channelId = "1283235142739169362";
@@ -18,7 +19,10 @@ export const processNewMatchmakingMessages = async (client: Client) => {
     return;
   }
 
+  const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
   const halfHourAgo = new Date(Date.now() - 30 * 60 * 1000);
+  const interval = oneMinuteAgo;
+
   let messages = new Collection<string, Message>();
   let lastId: string | undefined;
 
@@ -29,11 +33,11 @@ export const processNewMatchmakingMessages = async (client: Client) => {
     const batch = await channel.messages.fetch(options);
     messages = messages.concat(batch);
 
-    if (batch.size < 100 || batch.last()!.createdAt < halfHourAgo) break;
+    if (batch.size < 100 || batch.last()!.createdAt < interval) break;
     lastId = batch.last()!.id;
   }
 
-  messages = messages.filter((msg) => msg.createdAt >= halfHourAgo);
+  messages = messages.filter((msg) => msg.createdAt >= interval);
 
   const uniqueUserIds = new Set<string>();
   messages.forEach((message: Message) => {
@@ -43,12 +47,9 @@ export const processNewMatchmakingMessages = async (client: Client) => {
   console.log(uniqueUserIds);
 
   try {
-    const res = await fetch(GET_UNREGISTERED_USERS_FROM_IDS, {
-      method: "POST",
-      body: JSON.stringify({ userIds: Array.from(uniqueUserIds) }),
-    });
-
-    const unregisteredUserIds = (await res.json()) as string[];
+    const unregisteredUserIds = await getUnregisteredUsersFromIds(
+      Array.from(uniqueUserIds)
+    );
 
     // send dms to users
     for (const userId of unregisteredUserIds) {
@@ -84,4 +85,3 @@ export const processNewMatchmakingMessages = async (client: Client) => {
   //   }
   // }
 };
-
