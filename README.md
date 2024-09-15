@@ -2,6 +2,9 @@
 
 Discord is home to vibrant technical communities, including Microsoft's AI community, but managing large-scale discussions can be challenging.
 
+## Demo and Pitch:
+Watch it here: https://www.loom.com/share/414412397eb3498eb665f4758bc3605e?sid=a3d0dc7f-74c1-4190-8a2a-44a57051784b
+
 ## The Problems:
 
 ### Team Matchmaking:
