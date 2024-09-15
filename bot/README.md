@@ -28,6 +28,11 @@ These then get stored in Cosmos DB and indexed by Azure AI Search periodically (
 
 #### Instructions to use the bot
 
+Onboarding
+
+- Introduce yourself in the `team-matchmaking` channel
+- CoMA will DM you to get your name, pronouns, and a bit about you
+
 In the server,
 
 - use `/searchUsers` to start a search session for users.
