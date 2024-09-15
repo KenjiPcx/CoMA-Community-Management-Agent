@@ -4,11 +4,12 @@ import { createOrUpdateUser } from "../db/users";
 import { UserDocument, UserProfileDocument } from "../db/cosmosClient";
 import { userThreads } from "../index";
 import { searchUsers } from "./tools/searchUsers";
+import { searchDocs } from "./tools/searchDocs";
 
 const openai = getClient();
 
 export const startAssistantSession = async (
-  assistantType: "onboarding" | "search",
+  assistantType: "onboarding" | "search_user" | "search_docs",
   context: string | undefined,
   userId: string
 ) => {
@@ -16,7 +17,9 @@ export const startAssistantSession = async (
   const assistantId =
     assistantType === "onboarding"
       ? process.env.ASSISTANT_ID_ONBOARDING!
-      : process.env.ASSISTANT_ID_SEARCH!;
+      : assistantType === "search_user"
+      ? process.env.ASSISTANT_ID_SEARCH_USER!
+      : process.env.ASSISTANT_ID_SEARCH_DOCS!;
 
   if (context) {
     await openai.beta.threads.messages.create(thread.id, {
@@ -38,7 +41,7 @@ export const startAssistantSession = async (
 };
 
 export async function processMessageWithAssistant(
-  assistantType: "onboarding" | "search",
+  assistantType: "onboarding" | "search_user" | "search_docs",
   threadId: string,
   message: string
 ) {
@@ -51,7 +54,9 @@ export async function processMessageWithAssistant(
     assistant_id:
       assistantType === "onboarding"
         ? process.env.ASSISTANT_ID_ONBOARDING!
-        : process.env.ASSISTANT_ID_SEARCH!,
+        : assistantType === "search_user"
+        ? process.env.ASSISTANT_ID_SEARCH_USER!
+        : process.env.ASSISTANT_ID_SEARCH_DOCS!,
   });
 
   return handleRunStatus(run, threadId);
@@ -115,6 +120,18 @@ const handleRequiresAction: any = async (run: Run, threadId: string) => {
           };
           console.log(args);
           const searchResults = await searchUsers(args.query);
+          console.log("searchResults", searchResults);
+          return {
+            tool_call_id: tool.id,
+            output: searchResults,
+          };
+        }
+        if (tool.function.name === "search_docs") {
+          const args = JSON.parse(tool.function.arguments) as {
+            query: string;
+          };
+          console.log(args);
+          const searchResults = await searchDocs(args.query);
           console.log("searchResults", searchResults);
           return {
             tool_call_id: tool.id,

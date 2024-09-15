@@ -33,20 +33,11 @@ export interface UserProfileDocument {
   mentorHelp: string;
 }
 
-export interface ThreadDocument {
-  id: string;
-  threadId: string;
-  problem: string;
-  status: "open" | "closed";
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 export interface DocDocument {
-  id: string;
   title: string;
+  question: string;
+  answer: string;
   content: string;
-  category: string;
-  createdAt: Date;
-  updatedAt: Date;
+  tags: string[];
+  usefulLinks: string[];
 }

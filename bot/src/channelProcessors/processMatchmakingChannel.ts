@@ -4,14 +4,15 @@ import {
   FetchMessagesOptions,
   Message,
   TextChannel,
-  User,
 } from "discord.js";
-import { GET_UNREGISTERED_USERS_FROM_IDS } from "../endpoints";
 import { sendCardWithButtons } from "../bot/botActions";
 import { getUnregisteredUsersFromIds } from "../db/users";
 
 export const processNewMatchmakingMessages = async (client: Client) => {
-  const channelId = "1283235142739169362";
+  const channelId = process.env.DISCORD_MATCHMAKING_CHANNEL_ID;
+  if (!channelId) {
+    throw new Error("No channel ID provided");
+  }
   const channel = await client.channels.fetch(channelId);
 
   if (!(channel instanceof TextChannel)) {
@@ -19,9 +20,11 @@ export const processNewMatchmakingMessages = async (client: Client) => {
     return;
   }
 
-  const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
-  const halfHourAgo = new Date(Date.now() - 30 * 60 * 1000);
-  const interval = oneMinuteAgo;
+  const mins = process.env.DISCORD_MESSAGE_PROCESSING_INTERVAL_MINUTES;
+  if (!mins) {
+    throw new Error("No minutes provided");
+  }
+  const interval = new Date(Date.now() - parseInt(mins) * 60 * 1000);
 
   let messages = new Collection<string, Message>();
   let lastId: string | undefined;

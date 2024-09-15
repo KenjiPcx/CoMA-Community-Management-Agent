@@ -1,4 +1,4 @@
-import { containers } from "./cosmosClient";
+import { containers, UserDocument } from "./cosmosClient";
 
 export const getUser = async (
   userId: string
@@ -29,7 +29,7 @@ export const getUnregisteredUsersFromIds = async (userIds: string[]) => {
     parameters: [
       {
         name: "@userIds",
-        value: userIds,
+        value: userIds.join(","),
       },
     ],
   };
@@ -37,7 +37,7 @@ export const getUnregisteredUsersFromIds = async (userIds: string[]) => {
     const { resources: registeredUsers } = await containers.users.items
       .query(querySpec)
       .fetchAll();
-    const registeredIds = registeredUsers.map((user) => user.id);
+    const registeredIds = registeredUsers.map((user) => user.userId);
     const unregisteredIds = userIds.filter((id) => !registeredIds.includes(id));
     return unregisteredIds;
   } catch (error) {

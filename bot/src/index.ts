@@ -12,7 +12,6 @@ import {
   ChannelType,
   Events,
   Message,
-  SlashCommandBuilder,
 } from "discord.js";
 import {
   startAssistantSession,
@@ -20,6 +19,8 @@ import {
 } from "./assistant/assistantUtils";
 import { registerCommands } from "./bot/botSetup";
 import { processNewMatchmakingMessages } from "./channelProcessors/processMatchmakingChannel";
+import { autoQnA } from "./assistant/autoQnA";
+import { processHelpChannel } from "./channelProcessors/processHelpChannel";
 
 export interface CustomClient extends Client {
   commands: Collection<string, any>;
@@ -30,15 +31,14 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.MessageContent,
-    // GatewayIntentBits.GuildMembers,
-    // GatewayIntentBits.GuildEmojisAndStickers,
-    // GatewayIntentBits.GuildIntegrations,
-    // GatewayIntentBits.GuildWebhooks,
-    // GatewayIntentBits.GuildInvites,
+    GatewayIntentBits.GuildMessages,
   ],
 }) as CustomClient;
 
-type userStore = { threadId: string; assistantType: "onboarding" | "search" };
+type userStore = {
+  threadId: string;
+  assistantType: "onboarding" | "search_user" | "search_docs";
+};
 export const userThreads = new Collection<string, userStore>();
 
 registerCommands(client);
@@ -46,8 +46,16 @@ registerCommands(client);
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 
-  cron.schedule("* * * * *", async () => {
+  const cronString = process.env.DISCORD_MESSAGE_PROCESSING_INTERVAL_CRON;
+  if (!cronString) {
+    throw new Error("No cron string provided");
+  }
+  cron.schedule(cronString, async () => {
     await processNewMatchmakingMessages(client);
+  });
+
+  cron.schedule(cronString, async () => {
+    await processHelpChannel(client);
   });
 });
 
@@ -64,12 +72,30 @@ client.on(Events.InteractionCreate, async (interaction) => {
       });
       // Start a thread and DM the user
       await startAssistantSession(
-        "search",
+        "search_user",
         `User: ${user.id}, username: ${user.username}`,
         user.id
       );
       await user.send(
         "Hey there, use me to find people to build with, testing your product, or to just chat with! Just let me know what you're looking for and I'll help you find the right people!"
+      );
+      return;
+    }
+
+    if (interaction.commandName === "search_docs") {
+      await interaction.reply({
+        content:
+          "Starting a thread to search for docs... Check your DMs! Let's talk over there",
+        ephemeral: true,
+      });
+      // Start a thread and DM the user
+      await startAssistantSession(
+        "search_docs",
+        `User: ${user.id}, username: ${user.username}`,
+        user.id
+      );
+      await user.send(
+        "Hey there, use me to find documentation for anything in this community! I have been here for a while and have seen all the docs shared in this channel. I can help you find the right documentation for your needs!"
       );
       return;
     }
@@ -105,7 +131,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   // Handle start onboarding button
   if (interaction.isButton()) {
     const buttonInteraction = interaction as ButtonInteraction;
-    const { customId, user, message } = buttonInteraction;
+    const { customId, user } = buttonInteraction;
     const [source, action] = customId.split("_");
     console.log(
       `User ${user.id} clicked on a card with id ${customId}, clicked ${action} from source ${source}`
@@ -133,8 +159,8 @@ client.on(Events.MessageCreate, async (message: Message) => {
   if (message.author.bot) return;
 
   const userId = message.author.id;
-  const userInput = message.content;
 
+  // Handle onboarding chat
   if (message.channel.type === ChannelType.DM) {
     if (userThreads.has(userId)) {
       console.log(
@@ -144,10 +170,22 @@ client.on(Events.MessageCreate, async (message: Message) => {
       const response = await processMessageWithAssistant(
         store.assistantType,
         store.threadId,
-        userInput
+        message.content
       );
       console.log(`Response from assistant: ${response}`);
       await message.reply(response);
+    }
+  }
+
+  // Help channel:
+  if (process.env.AUTO_QNA === "true") {
+    if (message.channel.type === ChannelType.GuildText) {
+      if (message.channel.id === process.env.DISCORD_HELP_CHANNEL_ID) {
+        const res = await autoQnA(message);
+        if (res !== `""`) {
+          await message.reply(res);
+        }
+      }
     }
   }
 });

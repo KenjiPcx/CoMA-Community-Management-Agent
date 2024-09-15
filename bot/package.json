@@ -11,11 +11,15 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@ai-sdk/azure": "^0.0.38",
     "@azure/cosmos": "^4.1.1",
     "@azure/search-documents": "^12.1.0",
+    "ai": "^3.3.37",
     "discord.js": "^14.16.1",
     "dotenv": "^16.4.5",
+    "langchain": "^0.3.0",
     "node-cron": "^3.0.3",
-    "openai": "^4.61.0"
+    "openai": "^4.61.0",
+    "zod": "^3.23.8"
   }
 }
