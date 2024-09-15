@@ -19,7 +19,7 @@ export const processHelpChannel = async (client: Client) => {
     return;
   }
 
-  const mins = process.env.DISCORD_MESSAGE_PROCESSING_INTERVAL_MINUTES;
+  const mins = process.env.DISCORD_MESSAGE_PROCESSING_INTERVAL_MIN;
   if (!mins) {
     throw new Error("No minutes provided");
   }

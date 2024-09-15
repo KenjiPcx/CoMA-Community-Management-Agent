@@ -8,7 +8,7 @@ const searchClient = new SearchClient(
 
 export const searchDocs = async (query: string) => {
   try {
-    const results = await searchClient.search(query);
+    const results = await searchClient.search(query, { top: 5 });
     const resultsArray = [];
     for await (const result of results.results) {
       resultsArray.push(result.document);

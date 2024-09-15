@@ -178,13 +178,11 @@ client.on(Events.MessageCreate, async (message: Message) => {
   }
 
   // Help channel:
-  if (process.env.AUTO_QNA === "true") {
-    if (message.channel.type === ChannelType.GuildText) {
-      if (message.channel.id === process.env.DISCORD_HELP_CHANNEL_ID) {
-        const res = await autoQnA(message);
-        if (res !== `""`) {
-          await message.reply(res);
-        }
+  if (process.env.AUTO_QNA === "true" && message.channel.type === ChannelType.GuildText) {
+    if (message.channel.id === process.env.DISCORD_HELP_CHANNEL_ID) {
+      const res = await autoQnA(message);
+      if (res !== `""`) {
+        await message.reply(res);
       }
     }
   }
