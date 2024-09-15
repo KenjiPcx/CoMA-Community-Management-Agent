@@ -49,6 +49,8 @@ No more lost context or frustrating searches through channels. Just ask CoMA, an
 
 # Developers Guide
 
+Here's how you can get started by adding the bot to your server
+
 ## Stack
 
 ### Dev
@@ -74,6 +76,10 @@ Copy .env.example to .env and fill in the values from the resources you created
 
 I just use `bun src/assistant/setup/{assistantName}.ts` to setup the assistant and then copy the ID and save to .env
 
-## Run the bot
+## Run the bot locally
 
 `bun run src/bot.ts`
+
+## Deploy the bot on a server
+
+Use an app like Railway to deploy the bot
