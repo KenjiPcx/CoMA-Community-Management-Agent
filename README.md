@@ -25,6 +25,8 @@ When users introduce themselves in the matchmaking channel, CoMA reaches out to 
 
 ### How it works
 
+![image](https://github.com/user-attachments/assets/14a0576a-737e-468c-b3e4-203d640720d9)
+
 We have document processors to periodically process the messages in the channels and extract the information we need to build the users' profiles and docs.
 
 These then get stored in Cosmos DB and indexed by Azure AI Search periodically (manually for me).
