@@ -25,7 +25,7 @@ When users introduce themselves in the matchmaking channel, CoMA reaches out to 
 
 ### How it works
 
-![image](https://github.com/user-attachments/assets/14a0576a-737e-468c-b3e4-203d640720d9)
+![image](https://github.com/user-attachments/assets/e6a6c929-0976-4ccb-aaf0-1bb0374d5e4c)
 
 We have document processors to periodically process the messages in the channels and extract the information we need to build the users' profiles and docs.
 
